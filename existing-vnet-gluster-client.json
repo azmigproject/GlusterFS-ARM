@@ -81,14 +81,14 @@
       "metadata": {
         "description": "net and subnet to use existing or create your own."
       }
-    },    
-    "existingVnetName": {
+    },
+    "new/existingVnetName": {
       "type": "string",
       "metadata": {
         "description": "existing vnet name."
       }
     },
-    "existingSubnetName": {
+    "new/existingSubnetName": {
       "type": "string",
       "metadata": {
         "description": "existing subnet name"
@@ -128,10 +128,10 @@
   "variables": {
     "addressPrefix": "[parameters('addressPrefix')]",
     "subnetPrefix": "[parameters('subnetPrefix')]",
-    "virtualNetworkName": "[parameters('existingVnetName')]",
+    "virtualNetworkName": "[parameters('new/existingVnetName')]",
     "rgname": "[resourceGroup().name]",
     "masterName": "[parameters('masterName')]",
-    "subnetName": "[parameters('existingSubnetName')]",
+    "subnetName": "[parameters('new/existingSubnetName')]",
     "publicIPAddressName": "[concat(parameters('vmssName'), 'pip')]",
     "loadBalancerName": "[concat(parameters('vmssName'), 'lb')]",
     "publicIPAddressID": "[resourceId('Microsoft.Network/publicIPAddresses',variables('publicIPAddressName'))]",
