@@ -46,7 +46,7 @@ You have to provide these parameters to the template :
 * _Storage Disks Count_ : Enter the disks count.
 
 
-[![Click to deploy template on Azure](http://azuredeploy.net/deploybutton.png "Click to deploy template on Azure")](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fazmigproject%2FGlusterFS-ARM%2Fmaster%2Fgluster-server.json) 
+[![Click to deploy template on Azure](http://azuredeploy.net/deploybutton.png "Click to deploy template on Azure")](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fskchauhan016%2FGlusterFS-ARM%2Fmaster%2Fgluster-server.json) 
 
 ## Deploy Glustre Client
 
@@ -66,7 +66,7 @@ You have to provide these parameters to the template :
 * _Admin Username_ : This is the name of the administrator account to create on the VM.
 * _SSH Key Data_ : The public SSH key to associate with the administrator user. Format has to be on a single line 'ssh-rsa key'
 
-[![Click to deploy template on Azure](http://azuredeploy.net/deploybutton.png "Click to deploy template on Azure")](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fazmigproject%2FGlusterFS-ARM%2Fmaster%2Fgluster-client.json)
+[![Click to deploy template on Azure](http://azuredeploy.net/deploybutton.png "Click to deploy template on Azure")](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fskchauhan016%2FGlusterFS-ARM%2Fmaster%2Fgluster-client.json)
 
 
 ## Testing 
