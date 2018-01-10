@@ -1,0 +1,342 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "vmssName": {
+      "type": "string",
+      "metadata": {
+        "description": "Master VMSS name."
+      },
+      "maxLength": 15
+    },
+    "nodeCount": {
+      "type": "int",
+      "metadata": {
+        "description": "Number of gluster nodes (100 or less)."
+      },
+      "defaultValue": 4,
+      "minValue": 2,
+      "maxValue": 100
+
+    },
+    "VMSize": {
+      "type": "string",
+      "defaultValue": "Standard_DS3_v2",
+      "allowedValues": [
+        "Standard_DS1",
+        "Standard_DS2",
+        "Standard_DS3",
+        "Standard_DS4",
+        "Standard_DS11",
+        "Standard_DS12",
+        "Standard_DS13",
+        "Standard_DS14",
+        "Standard_DS1_v2",
+        "Standard_DS2_v2",
+        "Standard_DS3_v2",
+        "Standard_DS4_v2",
+        "Standard_DS5_v2",
+        "Standard_DS11_v2",
+        "Standard_DS12_v2",
+        "Standard_DS13_v2",
+        "Standard_DS14_v2",
+        "Standard_DS15_v2",
+        "Standard_F1s",
+        "Standard_F2s",
+        "Standard_F4s",
+        "Standard_F8s",
+        "Standard_F16s",
+        "Standard_GS1",
+        "Standard_GS2",
+        "Standard_GS3",
+        "Standard_GS4",
+        "Standard_GS5",
+        "Standard_L4s",
+        "Standard_L8s",
+        "Standard_L16s",
+        "Standard_L32s"
+      ],
+      "metadata": {
+        "description": "sku to use for the storage nodes - only premium disks VMs are allowed"
+      }
+    },
+    "VMImage": {
+      "type": "string",
+      "defaultValue": "CentOS_7.3",
+      "allowedValues": [
+        "CentOS_7.2",
+        "CentOS_7.3"
+      ],
+      "metadata": {
+        "description": "VM Image."
+      }
+    },
+    "Vnet/Subnet": {
+      "type": "string",
+      "defaultValue": "new",
+      "allowedValues": [
+        "new",
+        "existing"
+      ],
+      "metadata": {
+        "description": "vnet and subnet to use existing or create your own"
+      }
+    },
+    "existingVnetName": {
+      "type": "string",
+      "metadata": {
+        "description": "existing vnet name."
+      }
+    },
+    "existingSubnetName": {
+      "type": "string",
+      "metadata": {
+        "description": "existing subnet name"
+      }
+    },
+    "subnetPrefix": {
+      "type": "string",
+      "metadata": {
+        "description": "existing subnet name"
+      }
+    },
+    "addressPrefix": {
+      "type": "string",
+      "metadata": {
+        "description": "existing subnet name"
+      }
+    },
+    "clientId": {
+      "type": "string",
+      "metadata": {
+        "description": "ClientId for az login."
+      }
+    },
+    "clientSecret": {
+      "type": "securestring",
+      "metadata": {
+        "description": "ClientSecret for az login."
+      }
+    },
+    "tenantId": {
+      "type": "string",
+      "metadata": {
+        "description": "ClientSecret for az login."
+      }
+    },
+    "adminUsername": {
+      "type": "string",
+      "metadata": {
+        "description": "Admin username on all VMs."
+      }
+    },
+    "sshKeyData": {
+      "type": "string",
+      "metadata": {
+        "description": "SSH rsa public key file as a string."
+      }
+    },
+    "storageDiskSize": {
+      "type": "string",
+      "defaultValue": "P30",
+      "allowedValues": [
+        "P10",
+        "P20",
+        "P30"
+      ],
+      "metadata": {
+        "description": "Premium storage disk size used for the storage services"
+      }
+    },
+    "StorageDisksCount": {
+      "type": "int",
+      "defaultValue": 10,
+      "minValue": 0,
+      "maxValue": 10,
+      "metadata": {
+        "description": "Number of storage disks"
+      }
+    }
+  },
+  "variables": {
+    "addressPrefix": "10.0.0.0/16",
+    "subnetPrefix": "10.0.0.0/24",
+    "deploymentApiVersion": "2015-01-01",
+    "virtualNetworkName": "gluster-vnet",
+    "Vnet/Subnet": "[parameters('Vnet/Subnet')]",
+    "vmssname": "[parameters('vmssName')]",
+    "nodes": "[div(parameters('nodeCount'), 2)]",
+    "nodeCount": "[add(parameters('nodeCount'), -1)]",
+    "clientId": "[parameters('clientId')]",
+    "clientSecret": "[parameters('clientSecret')]",
+    "tenantId": "[parameters('tenantId')]",
+    "vmsscount": 2,
+    "vmssNameVolume": "[concat(parameters('vmssName'), 'master')]",
+    "vmssCountVolume": 1,
+    "subnetName": "gluster-subnet",
+    "publicIPAddressName": "[concat(parameters('vmssName'), 'pip')]",
+    "publicIPAddressName2": "[concat(parameters('vmssName'), 'pip2')]",
+    "loadBalancerName0": "[concat(parameters('vmssName'), 'lb0')]",
+    "loadBalancerName1": "[concat(parameters('vmssName'), 'lb1')]",
+    "publicIPAddressID1": "[resourceId('Microsoft.Network/publicIPAddresses',concat(variables('publicIPAddressName'),'0'))]",
+    "publicIPAddressID2": "[resourceId('Microsoft.Network/publicIPAddresses',concat(variables('publicIPAddressName'),'1'))]",
+    "lbID1": "[resourceId('Microsoft.Network/loadBalancers',variables('loadBalancerName0'))]",
+    "lbID2": "[resourceId('Microsoft.Network/loadBalancers',variables('loadBalancerName1'))]",
+    "natPoolName": "[concat(parameters('vmssName'), 'natpool')]",
+    "bePoolName": "[concat(parameters('vmssName'), 'bepool')]",
+    "natPoolNameLast": "[concat(parameters('vmssName'), 'natpoollast')]",
+    "bePoolNameLast": "[concat(parameters('vmssName'), 'bepoollast')]",
+    "natStartPort": 50000,
+    "natEndPort": 52000,
+    "natBackendPort": 22,
+    "storageDiskSize": "[variables('PremiumStorageMap')[parameters('storageDiskSize')].size]",
+    "numStorageDisks": "[parameters('storageDisksCount')]",
+    "numMetadataDisks": 0,
+    "nicName": "[concat(parameters('vmssName'), 'nic')]",
+    "ipConfigName": "[concat(parameters('vmssName'), 'ipconfig')]",
+    "frontEndIPConfigID1": "[concat(variables('lbID1'),'/frontendIPConfigurations/loadBalancerFrontEnd')]",
+    "frontEndIPConfigID2": "[concat(variables('lbID2'),'/frontendIPConfigurations/loadBalancerFrontEnd')]",
+    "networkApiVersion": "2016-06-01",
+    "insightsApiVersion": "2015-04-01",
+    "location": "[resourceGroup().location]",
+    "rgname": "[resourceGroup().name]",
+    "installLIS": "bash InstallLIS.sh",
+    "storage-template-Url": "[uri(deployment().properties.templateLink.uri, concat(variables('Vnet/Subnet'),'-vnet-gluster-server.json'))]",
+    "PremiumStorageMap": {
+      "P10": {
+        "size": 128
+      },
+      "P20": {
+        "size": 512
+      },
+      "P30": {
+        "size": 1023
+      }
+    },
+    "image": "[parameters('VMImage')]",
+    "glusterNodeSettings": {
+      "VMsku": "[parameters('VMSize')]",
+      "storageDiskSize": "[variables('PremiumStorageMap')[parameters('storageDiskSize')].size]",
+      "numStorageDisks": "[add(parameters('storageDisksCount'), -1)]",
+      "numStorageDisksLast": 1,
+      "numMetadataDisks": 0
+    },
+    "computeNodeImages": {
+      "CentOS_7.2": {
+        "publisher": "OpenLogic",
+        "offer": "CentOS",
+        "sku": "7.2",
+        "version": "latest"
+      },
+      "CentOS_7.3": {
+        "publisher": "OpenLogic",
+        "offer": "CentOS",
+        "sku": "7.3",
+        "version": "latest"
+      },
+      "RHEL_7.2": {
+        "publisher": "RedHat",
+        "offer": "RHEL",
+        "sku": "7.2",
+        "version": "latest"
+      }
+    },
+    "nodeOSSettings": {
+      "adminUserName": "[parameters('adminUserName')]",
+      "sshKeyData": "[parameters('sshKeyData')]",
+      "imageReference": "[variables('computeNodeImages')[variables('image')]]"
+    },
+    "computeApiVersion": "2016-04-30-preview",
+    "sshKeyPath": "[concat('/home/',variables('nodeOSSettings').adminUserName,'/.ssh/authorized_keys')]",
+    "glusterInstall": "[concat('bash install_gluster.sh ', 'gluster000000', ' client')]",
+    "storageDiskArray": [
+      {
+        "diskSizeGB": "[variables('glusterNodeSettings').storageDiskSize]",
+        "lun": "0",
+        "createOption": "Empty"
+      },
+      {
+        "diskSizeGB": "[variables('glusterNodeSettings').storageDiskSize]",
+        "lun": "1",
+        "createOption": "Empty"
+      },
+      {
+        "diskSizeGB": "[variables('glusterNodeSettings').storageDiskSize]",
+        "lun": "2",
+        "createOption": "Empty"
+      },
+      {
+        "diskSizeGB": "[variables('glusterNodeSettings').storageDiskSize]",
+        "lun": "3",
+        "createOption": "Empty"
+      },
+      {
+        "diskSizeGB": "[variables('glusterNodeSettings').storageDiskSize]",
+        "lun": "4",
+        "createOption": "Empty"
+      },
+      {
+        "diskSizeGB": "[variables('glusterNodeSettings').storageDiskSize]",
+        "lun": "5",
+        "createOption": "Empty"
+      },
+      {
+        "diskSizeGB": "[variables('glusterNodeSettings').storageDiskSize]",
+        "lun": "6",
+        "createOption": "Empty"
+      },
+      {
+        "diskSizeGB": "[variables('glusterNodeSettings').storageDiskSize]",
+        "lun": "7",
+        "createOption": "Empty"
+      },
+      {
+        "diskSizeGB": "[variables('glusterNodeSettings').storageDiskSize]",
+        "lun": "8",
+        "createOption": "Empty"
+      },
+      {
+        "diskSizeGB": "[variables('glusterNodeSettings').storageDiskSize]",
+        "lun": "9",
+        "createOption": "Empty"
+      },
+      {
+        "diskSizeGB": "[variables('glusterNodeSettings').storageDiskSize]",
+        "lun": "10",
+        "createOption": "Empty"
+      }
+    ]
+  },
+  "resources": [
+    {
+      "apiVersion": "[variables('deploymentApiVersion')]",
+      "name": "ServerlinkedTemplate",
+      "type": "Microsoft.Resources/deployments",
+      "properties": {
+        "mode": "incremental",
+        "templateLink": {
+          "uri": "[variables('storage-template-Url')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "vmssname": { "value": "[parameters('vmssName')]" },
+          "nodeCount": { "value": "[parameters('nodeCount')]" },
+          "VMSize": { "value": "[parameters('VMSize')]" },
+          "VMImage": { "value": "[parameters('VMImage')]" },
+          "Vnet/Subnet": { "value": "[parameters('Vnet/Subnet')]" },
+          "existingVnetName": { "value": "[parameters('existingVnetName')]" },
+          "existingSubnetName": { "value": "[parameters('existingSubnetName')]" },
+          "subnetPrefix": { "value": "[parameters('subnetPrefix')]" },
+          "addressPrefix": { "value": "[parameters('addressPrefix')]" },
+          "clientId": { "value": "[parameters('clientId')]" },
+          "clientSecret": { "value": "[parameters('clientSecret')]" },
+          "tenantId": { "value": "[parameters('tenantId')]" },
+          "adminUsername": { "value": "[parameters('adminUsername')]" },
+          "sshKeyData": { "value": "[parameters('sshKeyData')]" },
+          "storageDiskSize": { "value": "[parameters('storageDiskSize')]" },
+          "StorageDisksCount": { "value": "[parameters('StorageDisksCount')]" }
+        }
+      }
+    }
+  ]
+}
