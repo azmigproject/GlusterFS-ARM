@@ -82,13 +82,13 @@
         "description": "vnet and subnet to use existing or create your own"
       }
     },
-    "existingVnetName": {
+    "new/existingVnetName": {
       "type": "string",
       "metadata": {
         "description": "existing vnet name."
       }
     },
-    "ExistingSubnetName": {
+    "new/existingSubnetName": {
       "type": "string",
       "metadata": {
         "description": "existing subnet name"
@@ -159,9 +159,10 @@
     }
   },
   "variables": {
-    "addressPrefix": "10.0.0.0/16",
-    "subnetPrefix": "10.0.0.0/24",
-    "virtualNetworkName": "gluster-vnet",
+    "addressPrefix": "[parameters('addressPrefix')]",
+    "subnetPrefix": "[parameters('subnetPrefix')]",    
+    "virtualNetworkName": "[parameters('new/existingVnetName')]",
+    "subnetName": "[parameters('new/existingSubnetName')]",
     "vmssname": "[parameters('vmssName')]",
     "nodes": "[div(parameters('nodeCount'), 2)]",
     "nodeCount": "[add(parameters('nodeCount'), -1)]",
@@ -171,7 +172,7 @@
     "vmsscount": 2,
     "vmssNameVolume": "[concat(parameters('vmssName'), 'master')]",
     "vmssCountVolume": 1,
-    "subnetName": "gluster-subnet",
+
     "publicIPAddressName": "[concat(parameters('vmssName'), 'pip')]",
     "publicIPAddressName2": "[concat(parameters('vmssName'), 'pip2')]",
     "loadBalancerName0": "[concat(parameters('vmssName'), 'lb0')]",

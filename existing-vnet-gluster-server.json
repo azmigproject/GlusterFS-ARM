@@ -82,13 +82,13 @@
         "description": "vnet and subnet to use existing or create your own"
       }
     },
-    "existingVnetName": {
+    "new/existingVnetName": {
       "type": "string",
       "metadata": {
         "description": "existing vnet name."
       }
     },
-    "existingSubnetName": {
+    "new/ExistingSubnetName": {
       "type": "string",
       "metadata": {
         "description": "existing subnet name"
@@ -161,7 +161,7 @@
   "variables": {
     "addressPrefix": "[parameters('addressPrefix')]",
     "subnetPrefix": "[parameters('subnetPrefix')]",
-    "virtualNetworkName": "[parameters('existingVnetName')]",
+    "virtualNetworkName": "[parameters('new/existingVnetName')]",
     "vmssname": "[parameters('vmssName')]",
     "nodes": "[div(parameters('nodeCount'), 2)]",
     "nodeCount": "[add(parameters('nodeCount'), -1)]",
@@ -171,7 +171,7 @@
     "vmsscount": 2,
     "vmssNameVolume": "[concat(parameters('vmssName'), 'master')]",
     "vmssCountVolume": 1,
-    "subnetName": "[parameters('existingSubnetName')]",
+    "subnetName": "[parameters('new/existingSubnetName')]",
     "publicIPAddressName": "[concat(parameters('vmssName'), 'pip')]",
     "publicIPAddressName2": "[concat(parameters('vmssName'), 'pip2')]",
     "loadBalancerName0": "[concat(parameters('vmssName'), 'lb0')]",
