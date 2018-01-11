@@ -24,6 +24,7 @@ GlusterFS can be installed on any Linux distribution. We have used CentOS 7.3 fo
 Note- 
 1. Before setup Gluster FS make sure you have service principal (id, secrete and tenant id) to get artifacts from Azure.
 2. Since we are using Distributed-replicated volume so Gluster server nodes would be multple of 2.
+3. If want to create new vnet and subnet create new resource group and If using existing resource group make sure vnet and subnet name does not exist in the resource group.
 
 
 You have to provide these parameters to the template :
@@ -32,18 +33,18 @@ You have to provide these parameters to the template :
 * _Node_Count_ : Enter the node count.
 * _VM Size_ : Select virtual machine size from the dropdown.
 * _VM Image_ : Select virtual machine Image from the dropdown.
-* _Vnet/Subnet_ : Select new/existing from dropdown, new for a new vnet and subnet and existing for using existing vnet and subnet.
-* _Existing Vnet Name_ : Enter the existing vnet name (for new Vnet/Subnet it is not required just enter any random text because text box is required).
-* _Existing Subnet Name_ : Enter the existing subnet name (for new Vnet/Subnet it is not required just enter any random text because text box is required).
-* _Subnet Prefix_ : Enter the created client id.
-* _Vnet Prefix_ : Enter the Vnet Prefix of existing subnet for example 10.0.0.0/24 (for new Vnet/Subnet it is not required just enter any random value because text box is required).
-* _Client Id_ : Enter the subnet prefix of existing subnet for example 10.0.0.0/24 (for new Vnet/Subnet it is not required just enter any random value because text box is required).
+* _New/Existing Vnet Name_ : Enter the new or existing vnet name (for new Vnet/Subnet select resource group where vnet and subnet would be created ).
+* _New/Existing Subnet Name_ : Enter the existing subnet name (for new Vnet/Subnet select resource group where vnet and subnet would be created ).
+* _Subnet Prefix_ : Enter the subnet prefix of existing subnet for example 10.0.0.0/24 (for new Vnet/Subnet enter as per requirment).
+* _Vnet Prefix_ : Enter the Vnet Prefix of existing subnet for example 10.0.0.0/16 (for new Vnet/Subnet enter as per requirment).
+* _Client Id_ : Enter the client ID.
 * _Client secret_ : Enter the created client secret.
 * _Tenant Id_ : Enter the Tenant id.
 * _Admin Username_ : This is the name of the administrator account to create on the VM.
 * _SSH Key Data_ : The public SSH key to associate with the administrator user. Format has to be on a single line 'ssh-rsa key'
 * _Storage Disks Size_ : Select the disks size from the dropdown.
 * _Storage Disks Count_ : Enter the disks count.
+
 
 
 [![Click to deploy template on Azure](http://azuredeploy.net/deploybutton.png "Click to deploy template on Azure")](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fskchauhan016%2FGlusterFS-ARM%2Fmaster%2Fgluster-server.json) 

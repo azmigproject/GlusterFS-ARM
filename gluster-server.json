@@ -70,17 +70,7 @@
       "metadata": {
         "description": "VM Image."
       }
-    },    
-      "type": "string",
-      "defaultvalue": "new",
-      "allowedValues": [
-        "new",
-        "existing"
-      ],
-      "metadata": {
-        "description": "vnet and subnet to use existing or create your own"
-      }
-    },
+    },     
     "new/existingVnetName": {
       "type": "string",
       "metadata": {
