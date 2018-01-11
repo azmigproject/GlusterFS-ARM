@@ -73,13 +73,13 @@
     },
     "Vnet/Subnet": {
       "type": "string",
-      "defaultvalue": "new",
+      "defaultValue": "new",
       "allowedValues": [
         "new",
         "existing"
       ],
       "metadata": {
-        "description": "vnet and subnet to use existing or create your own"
+        "description": "net and subnet to use existing or create your own."
       }
     },
     "new/existingVnetName": {
@@ -126,14 +126,12 @@
     }
   },
   "variables": {
-    "addressPrefix": "10.0.0.0/16",
-    "subnetPrefix": "10.0.0.0/24",
-    "deploymentApiVersion": "2015-01-01",
-    "virtualNetworkName": "gluster-vnet",
+    "addressPrefix": "[parameters('addressPrefix')]",
+    "subnetPrefix": "[parameters('subnetPrefix')]",
+    "virtualNetworkName": "[parameters('new/existingVnetName')]",
     "rgname": "[resourceGroup().name]",
     "masterName": "[parameters('masterName')]",
-    "subnetName": "gluster-subnet",
-    "Vnet/Subnet": "[parameters('Vnet/Subnet')]",
+    "subnetName": "[parameters('new/existingSubnetName')]",
     "publicIPAddressName": "[concat(parameters('vmssName'), 'pip')]",
     "loadBalancerName": "[concat(parameters('vmssName'), 'lb')]",
     "publicIPAddressID": "[resourceId('Microsoft.Network/publicIPAddresses',variables('publicIPAddressName'))]",
@@ -150,7 +148,6 @@
     "insightsApiVersion": "2015-04-01",
     "location": "[resourceGroup().location]",
     "installLIS": "bash InstallLIS.sh",
-    "client-template-Url": "[uri(deployment().properties.templateLink.uri, concat(variables('Vnet/Subnet'),'-vnet-gluster-client.json'))]",
     "networkSettings": {
       "addressPrefix": "10.0.0.0/20",
       "glusterSubnetPrefix": "10.0.0.0/21",
@@ -209,31 +206,187 @@
   },
   "resources": [
     {
-      "apiVersion": "[variables('deploymentApiVersion')]",
-      "name": "clientlinkedTemplate",
-      "type": "Microsoft.Resources/deployments",
+      "type": "Microsoft.Network/virtualNetworks",
+      "name": "[variables('virtualNetworkName')]",
+      "location": "[variables('location')]",
+      "apiVersion": "[variables('networkApiVersion')]",
       "properties": {
-        "mode": "incremental",
-        "templateLink": {
-          "uri": "[variables('client-template-Url')]",
-          "contentVersion": "1.0.0.0"
+        "addressSpace": {
+          "addressPrefixes": [
+            "[variables('addressPrefix')]"
+          ]
         },
-        "parameters": {
-          "vmssName": { "value": "[parameters('vmssName')]" },
-          "nodeCount": { "value": "[parameters('nodeCount')]" },
-          "VMSize": { "value": "[parameters('VMSize')]" },
-          "VMImage": { "value": "[parameters('VMImage')]" },
-          "Vnet/Subnet": { "value": "[parameters('Vnet/Subnet')]" },
-          "new/existingVnetName": { "value": "[parameters('new/existingVnetName')]" },
-          "new/existingSubnetName": { "value": "[parameters('new/existingSubnetName')]" },
-          "subnetPrefix": { "value": "[parameters('subnetPrefix')]" },
-          "addressPrefix": { "value": "[parameters('addressPrefix')]" },
-          "masterName": { "value": "[parameters('masterName')]" },
-          "adminUsername": { "value": "[parameters('adminUsername')]" },
-          "sshKeyData": { "value": "[parameters('sshKeyData')]" }
+        "subnets": [
+          {
+            "name": "[variables('subnetName')]",
+            "properties": {
+              "addressPrefix": "[variables('subnetPrefix')]"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "[variables('publicIPAddressName')]",
+      "location": "[variables('location')]",
+      "apiVersion": "[variables('networkApiVersion')]",
+      "properties": {
+        "publicIPAllocationMethod": "Dynamic",
+        "dnsSettings": {
+          "domainNameLabel": "[parameters('vmssName')]"
         }
       }
-    }
+    },
+    {
+      "type": "Microsoft.Network/loadBalancers",
+      "name": "[variables('loadBalancerName')]",
+      "location": "[variables('location')]",
+      "apiVersion": "[variables('networkApiVersion')]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName'))]"
+      ],
+      "properties": {
+        "frontendIPConfigurations": [
+          {
+            "name": "LoadBalancerFrontEnd",
+            "properties": {
+              "publicIPAddress": {
+                "id": "[variables('publicIPAddressID')]"
+              }
+            }
+          }
+        ],
+        "backendAddressPools": [
+          {
+            "name": "[variables('bePoolName')]"
+          }
+        ],
+        "inboundNatPools": [
+          {
+            "name": "[variables('natPoolName')]",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[variables('frontEndIPConfigID')]"
+              },
+              "protocol": "tcp",
+              "frontendPortRangeStart": "[variables('natStartPort')]",
+              "frontendPortRangeEnd": "[variables('natEndPort')]",
+              "backendPort": "[variables('natBackendPort')]"
+            }
+          },
+          {
+            "name": "natpool2",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[variables('frontEndIPConfigID')]"
+              },
+              "protocol": "tcp",
+              "frontendPortRangeStart": "9000",
+              "frontendPortRangeEnd": "9120",
+              "backendPort": "9000"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachineScaleSets",
+      "name": "[parameters('vmssName')]",
+      "location": "[variables('location')]",
+      "apiVersion": "[variables('computeApiVersion')]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/loadBalancers/', variables('loadBalancerName'))]",
+        "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]"
+      ],
+      "sku": {
+        "name": "[variables('glusterNodeSettings').VMsku]",
+        "tier": "Standard",
+        "capacity": "[parameters('nodeCount')]"
+      },
+      "properties": {
+        "overprovision": "false",
+        "upgradePolicy": {
+          "mode": "Manual"
+        },
+        "virtualMachineProfile": {
+          "storageProfile": {
+            "osDisk": {
+              "createOption": "FromImage",
+              "caching": "ReadOnly"
+            },
+            "imageReference": "[variables('nodeOSSettings').imageReference]",
+            "dataDisks": []
+          },
+          "osProfile": {
+            "computerNamePrefix": "[parameters('vmssName')]",
+            "adminUsername": "[parameters('adminUsername')]",
+            "linuxConfiguration": {
+              "disablePasswordAuthentication": "true",
+              "ssh": {
+                "publicKeys": [
+                  {
+                    "path": "[variables('sshKeyPath')]",
+                    "keyData": "[variables('nodeOSSettings').sshKeyData]"
+                  }
+                ]
+              }
+            }
+          },
+          "networkProfile": {
+            "networkInterfaceConfigurations": [
+              {
+                "name": "[variables('nicName')]",
+                "properties": {
+                  "primary": "true",
+                  "ipConfigurations": [
+                    {
+                      "name": "[variables('ipConfigName')]",
+                      "properties": {
+                        "subnet": {
+                          "id": "[variables('networkSettings').glusterSubnetRef]"
+                        },
+                        "loadBalancerBackendAddressPools": [
+                          {
+                            "id": "[concat('/subscriptions/', subscription().subscriptionId,'/resourceGroups/', resourceGroup().name, '/providers/Microsoft.Network/loadBalancers/', variables('loadBalancerName'), '/backendAddressPools/', variables('bePoolName'))]"
+                          }
+                        ],
+                        "loadBalancerInboundNatPools": [
+                          {
+                            "id": "[concat('/subscriptions/', subscription().subscriptionId,'/resourceGroups/', resourceGroup().name, '/providers/Microsoft.Network/loadBalancers/', variables('loadBalancerName'), '/inboundNatPools/', variables('natPoolName'))]"
+                          },
+                          {
+                            "id": "[concat('/subscriptions/', subscription().subscriptionId,'/resourceGroups/', resourceGroup().name, '/providers/Microsoft.Network/loadBalancers/', variables('loadBalancerName'), '/inboundNatPools/natpool2')]"
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "extensionProfile": {
+            "extensions": [
+              {
+                "name": "lapextension",
+                "properties": {
+                  "publisher": "Microsoft.Azure.Extensions",
+                  "type": "CustomScript",
+                  "typeHandlerVersion": "2.0",
+                  "autoUpgradeMinorVersion": true,
+                  "settings": {
+                    "fileUris": [
+                      "[uri(deployment().properties.templateLink.uri, 'Scripts/gluster-client.sh')]"
+                    ],
+                    "commandToExecute": "[concat('bash gluster-client.sh ', variables('masterName'))]"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }  
   ]
-
 }
