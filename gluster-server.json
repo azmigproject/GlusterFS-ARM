@@ -70,8 +70,7 @@
       "metadata": {
         "description": "VM Image."
       }
-    },
-    "Vnet/Subnet": {
+    },    
       "type": "string",
       "defaultvalue": "new",
       "allowedValues": [
